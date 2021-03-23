@@ -6,23 +6,12 @@ import androidx.databinding.DataBindingUtil
 import com.jakewharton.threetenabp.AndroidThreeTen
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.ViewHolder
+import io.moyuru.timetablelayout.layoutmanager.Event
 import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager
 import io.moyuru.timetablelayoutsample.databinding.ActivityMainBinding
-import io.moyuru.timetablelayoutsample.decoration.ProgramTimeLabelDecoration
-import io.moyuru.timetablelayoutsample.decoration.StageNameDecoration
-import io.moyuru.timetablelayoutsample.item.ProgramItem
-import io.moyuru.timetablelayoutsample.item.SpaceItem
-import io.moyuru.timetablelayoutsample.model.EmptyPeriod
-import io.moyuru.timetablelayoutsample.model.Period
-import io.moyuru.timetablelayoutsample.model.Program
-import io.moyuru.timetablelayoutsample.model.createPrograms
 import org.threeten.bp.LocalDateTime
 import org.threeten.bp.ZoneOffset
 
-
-class Event(var eventName:String = "",
-            var startTime:Long = 0,
-            var endTime:Long = 0){}
 
 class MainActivity : AppCompatActivity() {
 
@@ -52,7 +41,7 @@ class MainActivity : AppCompatActivity() {
     //高さを取得
     val heightPerMin = resources.getDimensionPixelSize(R.dimen.heightPerMinute)
     //区切り線を入れる
-    binding.recyclerView.addItemDecoration(ProgramTimeLabelDecoration(this, periods, heightPerMin))
+    //binding.recyclerView.addItemDecoration(ProgramTimeLabelDecoration(this, periods, heightPerMin))
     /*//区切り線を入れる
     binding.recyclerView.addItemDecoration(
       StageNameDecoration(this, periods, periods.distinctBy { it.stageNumber }.size)
@@ -62,22 +51,9 @@ class MainActivity : AppCompatActivity() {
     binding.recyclerView.layoutManager =
       TimetableLayoutManager(
         resources.getDimensionPixelSize(R.dimen.columnWidth),
-        heightPerMin
-      ) {
-        val period = periods[it]
-        TimetableLayoutManager.PeriodInfo(
-          period.startAt,
-          period.endAt,
-          period.stageNumber
-        )
-      }
+        heightPerMin,
+        eventSchedule
+      )
     binding.recyclerView.adapter = adapter
-    periods.map {
-      when (it) {
-        is EmptyPeriod -> SpaceItem()
-        is Program -> ProgramItem(it)
-        else -> return
-      }
-    }.let(adapter::update)
   }
 }

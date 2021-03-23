@@ -21,10 +21,14 @@ import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
 
+class Event(var eventName:String = "",
+                   var startTime:Long = 0,
+                   var endTime:Long = 0)
+
 class TimetableLayoutManager(
   private val columnWidth: Int,
   private val heightPerMinute: Int,
-  private val periodLookUp: (position: Int) -> PeriodInfo
+  private val eventSchedule:MutableMap<String,MutableList<Event>>
 ) : RecyclerView.LayoutManager() {
 
   companion object {
@@ -675,7 +679,7 @@ class TimetableLayoutManager(
     lastEndUnixMin = NO_TIME
 
     //itemの数だけcolumn生成
-    (0 until itemCount).forEach {
+    /*(0 until itemCount).forEach {
       //periodInfo作成
       val periodInfo = periodLookUp(it)
       //ArrayListを返す
@@ -727,7 +731,7 @@ class TimetableLayoutManager(
       }
       if (periods == null || periods.isEmpty())
         logw("column $i is null or empty.")
-    }
+    }*/
   }
 
   private fun Int.isFirstColumn() = this == 0
