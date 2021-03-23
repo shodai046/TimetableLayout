@@ -31,7 +31,9 @@ private fun List<String>.toPrograms(
 ): List<Program> {
   var startAt = firstStartAt
   return map {
+    //Programのmapを生成する
     Program(it, startAt, startAt + duration, stageNumber)
+        //Programが進むにつれてrestDurationを追加
       .also { startAt += duration + restDuration }
   }
 }
@@ -115,14 +117,24 @@ fun createPrograms(): List<Program> {
     )
   )
 
+  //Programリストの初期化
   val programs = ArrayList<Program>()
-  val startAt1 = LocalDateTime.of(2019, 6, 1, 11, 0).toEpochSecond(ZoneOffset.UTC) * 1000
-  val startAt2 = LocalDateTime.of(2019, 6, 1, 11, 20).toEpochSecond(ZoneOffset.UTC) * 1000
-  val min20 = TimeUnit.MINUTES.toMillis(20)
+
+  //開始時刻の年月日を取得（一枠分）
+  val startAt1 = LocalDateTime.of(2019, 6, 1, 0, 0).toEpochSecond(ZoneOffset.UTC) * 1000
+  val startAt2 = LocalDateTime.of(2019, 6, 1, 1, 0).toEpochSecond(ZoneOffset.UTC) * 1000
+
+  //20分(Long型)
+  val min20 = TimeUnit.MINUTES.toMillis(60)
+
   lists.forEachIndexed { i, bandNames ->
+    //リストに対して拡張関数呼び出し
     bandNames.toPrograms(
+      //偶数のインデックスであればstartAt1, 奇数であればstartAt2を渡す
       if (i % 2 == 0) startAt1 else startAt2,
+      //リストの数が8個なら2枠にして渡す
       if (bandNames.size == 8) min20 * 2 else min20,
+      //リストの数が8個なら2枠にして渡す
       if (bandNames.size == 8) min20 * 2 else min20,
       i
     )

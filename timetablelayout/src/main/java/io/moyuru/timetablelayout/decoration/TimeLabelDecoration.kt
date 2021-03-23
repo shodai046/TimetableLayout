@@ -31,18 +31,38 @@ abstract class TimeLabelDecoration(
     Rect().apply { textPaint.getTextBounds(text, 0, text.lastIndex, this) }.height()
   }
 
+  //アイテムが描画された後に呼び出される
   override fun onDrawOver(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
     super.onDrawOver(c, parent, state)
 
+    //矩形を描画
     c.drawRect(0f, 0f, width.toFloat(), c.height.toFloat(), backgroundPaint)
 
+    //adapterをセット
     val adapter = parent.adapter ?: return
     if (parent.childCount < 0) return
 
-    val startAtList = (0 until adapter.itemCount).map(this::getStartUnixMillis)
+    //adapterからStartAt取得
+    val startAtList:List<Long> = (0 until adapter.itemCount).map(this::getStartUnixMillis)
 
     val base = parent.children.filter { it.top <= parent.paddingTop }.minBy { it.top } ?: return
     val baseEpochMillis = startAtList.getOrNull(base.layoutPosition) ?: return
+
+    val height = parent.height
+    val num = height/(60*heightPerMinute)
+
+
+
+
+    /*for(i in 0 .. num){
+      val gap = TimeUnit.MILLISECONDS.toMinutes((i+2)*60+baseEpochMillis - baseEpochMillis) * heightPerMinute
+      val top = base.top + gap
+      c.drawTextAtCenter(
+        formatUnixMillis(0),
+        Rect(0, top.toInt(), width, (top + textHeight).toInt()),
+        textPaint
+      )
+    }*/
 
     startAtList
       .filterIndexed { i, startAt -> startAt >= baseEpochMillis && canDecorate(i) }

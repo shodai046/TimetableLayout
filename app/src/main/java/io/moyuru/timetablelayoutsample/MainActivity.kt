@@ -16,22 +16,49 @@ import io.moyuru.timetablelayoutsample.model.EmptyPeriod
 import io.moyuru.timetablelayoutsample.model.Period
 import io.moyuru.timetablelayoutsample.model.Program
 import io.moyuru.timetablelayoutsample.model.createPrograms
+import org.threeten.bp.LocalDateTime
+import org.threeten.bp.ZoneOffset
+
+
+class Event(var eventName:String = "",
+            var startTime:Long = 0,
+            var endTime:Long = 0){}
 
 class MainActivity : AppCompatActivity() {
 
-  private val binding by lazy { DataBindingUtil.setContentView<ActivityMainBinding>(this, R.layout.activity_main) }
+  private val binding by lazy {
+    DataBindingUtil.setContentView<ActivityMainBinding>(
+      this,
+      R.layout.activity_main
+    )
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     AndroidThreeTen.init(this)
 
     val adapter = GroupAdapter<ViewHolder>()
-    val periods = fillWithSpacer(createPrograms())
+
+    //リスト作成
+    val eventList = mutableListOf<Event>()
+    eventList.add(Event("Fishing",
+      LocalDateTime.of(2019, 6, 1, 12, 0).toEpochSecond(ZoneOffset.UTC) * 1000,
+      LocalDateTime.of(2019, 6, 1, 14, 0).toEpochSecond(ZoneOffset.UTC) * 1000))
+
+    //マップ作成
+    val eventSchedule:MutableMap<String,MutableList<Event>> = mutableMapOf<String, MutableList<Event>>()
+    eventSchedule.put("Yano", eventList)
+
+    //高さを取得
     val heightPerMin = resources.getDimensionPixelSize(R.dimen.heightPerMinute)
+    //区切り線を入れる
     binding.recyclerView.addItemDecoration(ProgramTimeLabelDecoration(this, periods, heightPerMin))
+    /*//区切り線を入れる
     binding.recyclerView.addItemDecoration(
       StageNameDecoration(this, periods, periods.distinctBy { it.stageNumber }.size)
-    )
+    )*/
+
+    //レイアウトをセット
     binding.recyclerView.layoutManager =
       TimetableLayoutManager(
         resources.getDimensionPixelSize(R.dimen.columnWidth),
@@ -49,54 +76,8 @@ class MainActivity : AppCompatActivity() {
       when (it) {
         is EmptyPeriod -> SpaceItem()
         is Program -> ProgramItem(it)
+        else -> return
       }
     }.let(adapter::update)
-  }
-
-  private fun fillWithSpacer(programs: List<Program>): List<Period> {
-    if (programs.isEmpty()) return programs
-
-    val sortedPrograms = programs.sortedBy { it.startAt }
-    val firstProgramStartAt = sortedPrograms.first().startAt
-    val lastProgramEndAt = sortedPrograms.maxBy { it.endAt }?.endAt ?: return programs
-    val stageNumbers = sortedPrograms.map { it.stageNumber }.distinct()
-
-    val filledPeriod = ArrayList<Period>()
-    stageNumbers.forEach { roomNumber ->
-      val sessionsInSameRoom = sortedPrograms.filter { it.stageNumber == roomNumber }
-      sessionsInSameRoom.forEachIndexed { index, session ->
-        if (index == 0 && session.startAt > firstProgramStartAt)
-          filledPeriod.add(
-            EmptyPeriod(
-              firstProgramStartAt,
-              session.startAt,
-              roomNumber
-            )
-          )
-
-        filledPeriod.add(session)
-
-        if (index == sessionsInSameRoom.size - 1 && session.endAt < lastProgramEndAt) {
-          filledPeriod.add(
-            EmptyPeriod(
-              session.endAt,
-              lastProgramEndAt,
-              roomNumber
-            )
-          )
-        }
-
-        val nextSession = sessionsInSameRoom.getOrNull(index + 1) ?: return@forEachIndexed
-        if (session.endAt != nextSession.startAt)
-          filledPeriod.add(
-            EmptyPeriod(
-              session.endAt,
-              nextSession.startAt,
-              roomNumber
-            )
-          )
-      }
-    }
-    return filledPeriod.sortedBy { it.startAt }
   }
 }

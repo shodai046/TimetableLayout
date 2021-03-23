@@ -57,6 +57,7 @@ class TimetableLayoutManager(
     }
   }
 
+  //方向列挙体
   private enum class Direction {
     LEFT, TOP, RIGHT, BOTTOM
   }
@@ -68,12 +69,14 @@ class TimetableLayoutManager(
       parcel.readInt()
     )
 
+    //Parcel系メソッド
     override fun writeToParcel(parcel: Parcel, flags: Int) {
       parcel.writeInt(position)
       parcel.writeInt(left)
       parcel.writeInt(top)
     }
 
+    //Parcel系メソッド
     override fun describeContents(): Int {
       return 0
     }
@@ -95,6 +98,8 @@ class TimetableLayoutManager(
   private val parentBottom get() = height - paddingBottom
 
   private val periods = ArrayList<Period>()
+
+  //(Int, ArrayList<Period>) 一列ごとにPeriodの情報を保持
   private val columns = SparseArray<ArrayList<Period>>()
   private val anchor = Anchor()
 
@@ -105,14 +110,17 @@ class TimetableLayoutManager(
   private var savedState: SavedState? = null
   var shouldRecycleChildrenOnDetach = false
 
+  //デフォルトのLayoutParamsを生成
   override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {
     return RecyclerView.LayoutParams(RecyclerView.LayoutParams.WRAP_CONTENT, RecyclerView.LayoutParams.WRAP_CONTENT)
   }
 
+  //復帰時にsavedStateを取得
   override fun onRestoreInstanceState(state: Parcelable?) {
     savedState = (state as? SavedState)
   }
 
+  //savedStateに保存
   override fun onSaveInstanceState(): Parcelable? {
     if (childCount == 0) return null
 
@@ -132,7 +140,10 @@ class TimetableLayoutManager(
     }
   }
 
+  //layoutの初期化を行う
+  //adapterがセットされたときに一度だけ呼ばれる
   override fun onLayoutChildren(recycler: Recycler, state: State) {
+    //itemが一つもなければreturn
     if (itemCount == 0) {
       detachAndScrapAttachedViews(recycler)
       periods.clear()
@@ -142,10 +153,13 @@ class TimetableLayoutManager(
       return
     }
 
+    //columns, firstStartUnixMin, lastStartUnixMinを生成
     calculateColumns()
 
+    //NO_POSITIONではない場合
     if (pendingScrollPosition != NO_POSITION) {
       anchor.reset()
+      //既に配置されているViewの廃棄
       detachAndScrapAttachedViews(recycler)
       periods.getOrNull(pendingScrollPosition)?.let { period ->
         anchor.leftColumn = period.columnNumber
@@ -154,12 +168,13 @@ class TimetableLayoutManager(
       }
       return
     }
-
+    //初回は全部nullになるはず
     val firstVisibleView = findFirstVisibleView()
     val restoredOffsetX = savedState?.left ?: firstVisibleView?.let(this::getDecoratedLeft)
     val restoredOffsetY = savedState?.top ?: firstVisibleView?.let(this::getDecoratedTop)
     val restoredPeriod = (savedState?.position ?: anchor.top.get(anchor.leftColumn, -1)).let(periods::getOrNull)
 
+    //既に配置されているViewの廃棄
     anchor.reset()
     detachAndScrapAttachedViews(recycler)
 
@@ -167,12 +182,18 @@ class TimetableLayoutManager(
       anchor.leftColumn = restoredPeriod.columnNumber
       fillHorizontalChunk(restoredPeriod.columnNumber, restoredOffsetX, restoredOffsetY, restoredPeriod, true, recycler)
     } else {
+      //0が入るはず
       anchor.leftColumn = columns.keyAt(0)
       val columnCount = columns.size()
+      //paddingTopとPaddingLeft
+      //viewに設定されているmarginがあればoffsetが設定される
       val offsetY = parentTop
       var offsetX = parentLeft
+      //列ごとに計算
       for (columnNumber in 0 until columnCount) {
+        //列の中で一番最初のPeriodを渡す
         offsetX += addColumn(columns[columnNumber].first(), offsetX, offsetY, true, recycler)
+        //一番左に表示されている列を取得、設定
         anchor.rightColumn = columnNumber
         if (offsetX > parentRight) break
       }
@@ -237,13 +258,23 @@ class TimetableLayoutManager(
   override fun scrollHorizontallyBy(dx: Int, recycler: Recycler, state: State): Int {
     if (dx == 0) return 0
 
+    //現在表示されている一番左と右の列のviewを取得
     val rightView = findRightView() ?: return 0
     val leftView = findLeftView() ?: return 0
+    //実際の移動量を計算
+    //getDecoratedLeft(leftView)…leftViewのleft
+    //getDecoratedRight(rightView)…rightViewのright
     val actualDx = calculateHorizontallyScrollAmount(dx, getDecoratedLeft(leftView), getDecoratedRight(rightView))
+    //移動量0なら変更はなし
     if (actualDx == 0) return 0
+    var a = getDecoratedRight(leftView)
+
+    //全てのViewを一括で水平移動
     offsetChildrenHorizontal(-actualDx)
+    //すでに移動した後なので、actualDxが反映済み
     if (actualDx > 0) {
-      // recycle
+      // recycle（右側にリサイクル）
+      //左端のviewが完全に見えなくなったら
       if (getDecoratedRight(leftView) < parentLeft) recycleLeft(recycler)
 
       // append
@@ -255,8 +286,9 @@ class TimetableLayoutManager(
         val nextColumn = anchor.rightColumn.getNextColumn()
         fillHorizontalChunk(nextColumn, right, top, topPeriod, true, recycler)
       }
-    } else {
-      // recycle
+    } else if (actualDx <= 0)  {
+      // recycle（左側にリサイクル）
+      //右端のviewが完全に見えなくなったら
       if (getDecoratedLeft(rightView) > parentRight) recycleRight(recycler)
 
       // prepend
@@ -289,14 +321,23 @@ class TimetableLayoutManager(
     }
   }
 
+  /**
+   * left rightはめり込む
+   */
   private fun calculateHorizontallyScrollAmount(dx: Int, left: Int, right: Int): Int {
-    if (!anchor.leftColumn.isFirstColumn() || !anchor.rightColumn.isLastColumn()) return dx
+    //左列が最初の列、もしくは右列が最後の列以外ならそのまま移動量を返す
+    //全列画面に入りきらない場合は絶対ここでreturn
+    //if (!anchor.leftColumn.isFirstColumn()) return dx
+    //if (!anchor.rightColumn.isLastColumn()) return dx
 
+    //それ以外の場合
     return if (dx > 0) {
+      //最終列の場合
       if (anchor.rightColumn.isLastColumn())
         if (right <= parentRight) 0 else min(dx, right - parentRight)
       else dx
     } else {
+      //最初列の場合
       if (anchor.leftColumn.isFirstColumn())
         if (left >= parentLeft) 0 else max(dx, left - parentLeft)
       else dx
@@ -310,8 +351,11 @@ class TimetableLayoutManager(
     offsetY: Int,
     recycler: Recycler
   ): Pair<Int, Int> {
+    //adapterPositionに対応するViewを返す
     val view = recycler.getViewForPosition(period.adapterPosition)
+    //レイアウトにViewを追加
     addView(view)
+    //
     measureChild(view, period)
     val width = getDecoratedMeasuredWidth(view)
     val height = getDecoratedMeasuredHeight(view)
@@ -357,6 +401,7 @@ class TimetableLayoutManager(
     isAppend: Boolean,
     recycler: Recycler
   ): Int {
+    //Columnの列数を取得
     val columnNum = startPeriod.columnNumber
     val periods = columns[columnNum] ?: return 0
     val direction = if (isAppend) Direction.RIGHT else Direction.LEFT
@@ -364,9 +409,12 @@ class TimetableLayoutManager(
     var columnWidth = 0
     for (i in startPeriod.positionInColumn until periods.size) {
       val period = periods[i]
+      //Periodの幅と高さを取得
       val (width, height) = addPeriod(period, direction, offsetX, offsetY, recycler)
 
+      //高さ方向のoffsetを更新
       offsetY += height
+      //幅についてはそのままreturnする
       columnWidth = width
 
       if (i == startPeriod.positionInColumn) anchor.top.put(columnNum, period.adapterPosition)
@@ -448,15 +496,20 @@ class TimetableLayoutManager(
 
   private fun recycleLeft(recycler: Recycler) {
     val removed = arrayListOf<Int>()
+    //最左~再右までのレンジを取得（例:0~3）
     val range = if (anchor.rightColumn > anchor.leftColumn) (anchor.leftColumn..anchor.rightColumn)
+    //最左~再右までのレンジを取得（例:3~4 ＋ 0~1）
     else (anchor.leftColumn until columns.size()) + (0..anchor.rightColumn)
     range.forEach { columnNum ->
+      //列数に対応するviewを取得
       val views = findViewsByColumn(columnNum)
       val view = views.firstOrNull() ?: return@forEach
       if (getDecoratedRight(view) >= parentLeft) return@forEach
 
       views.forEach { removeAndRecycleView(it, recycler) }
+      //表示されていない列のリストに追加
       removed += columnNum
+      //一番左の列を更新
       anchor.leftColumn = anchor.leftColumn.getNextColumn()
     }
   }
@@ -565,10 +618,17 @@ class TimetableLayoutManager(
 
   private fun findRightView() = findViewByColumn(anchor.rightColumn)
 
+  /**
+   * columnNumberに対応するviewを取得する
+   */
   private fun findViewByColumn(columnNumber: Int): View? {
+    //childCount…表示されているviewの数
     (0 until childCount).forEach { layoutPosition ->
+      //表示されているviewをひとつずつ取得していく
       val view = getChildAt(layoutPosition) ?: return@forEach
+      //取得したviewに対応するPeriodを取得
       val period = periods[view.adapterPosition]
+      //取得したperiodが一番左、もしくは右列のものだったらviewをreturnする
       if (period.columnNumber == columnNumber) return view
     }
     return null
@@ -605,38 +665,62 @@ class TimetableLayoutManager(
     return maxTopPeriod
   }
 
+  //列の計算
+  //
   private fun calculateColumns() {
+    //全部リセット
     periods.clear()
     columns.clear()
     firstStartUnixMin = NO_TIME
     lastEndUnixMin = NO_TIME
 
+    //itemの数だけcolumn生成
     (0 until itemCount).forEach {
+      //periodInfo作成
       val periodInfo = periodLookUp(it)
-      val column = columns.getOrPut(periodInfo.columnNumber) { ArrayList() }
+      //ArrayListを返す
+      //現在のcolumn数に対応するcolumnを取得する（存在しない場合はput）
+      val column:ArrayList<Period> = columns.getOrPut(periodInfo.columnNumber) { ArrayList() }
 
+      //PeriodInfoからPeriodを生成
       val period = Period(
+        //開始時刻
         TimeUnit.MILLISECONDS.toMinutes(periodInfo.startUnixMillis).toInt(),
+        //終了時刻
         TimeUnit.MILLISECONDS.toMinutes(periodInfo.endUnixMillis).toInt(),
+        //column数
         periodInfo.columnNumber,
+        //index
         adapterPosition = it,
+        //columnのPeriod数
         positionInColumn = column.size
       )
+      //生成したperiodを追加(Local)
       periods.add(period)
+      //生成したperiodを追加(Global)
       column.add(period)
 
+      //index = 0のとき
       if (it == 0) {
+        //Local⇒Global 代入
         firstStartUnixMin = period.startUnixMin
         lastEndUnixMin = period.endUnixMin
       } else {
+        //index = 0ではないとき
+        //順次最初と最後の時間を更新していく
         firstStartUnixMin = min(period.startUnixMin, firstStartUnixMin)
         lastEndUnixMin = max(period.endUnixMin, lastEndUnixMin)
       }
     }
 
+    //一列ごとにPeriodの処理
+    //ただのエラー処理
     for (i in 0 until columns.size()) {
       val key = columns.keyAt(i)
+
+      //Periodから取得
       val periods = columns[i]
+      //columnのインデックスがおかしい場合
       if (key != i) {
         logw("column numbers are not Zero-based numbering.")
         break

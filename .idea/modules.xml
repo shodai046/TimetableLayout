@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/TimetableLayout.iml" filepath="$PROJECT_DIR$/.idea/TimetableLayout.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/TimetableLayout.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/TimetableLayout.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/timetablelayout/TimetableLayout.timetablelayout.iml" filepath="$PROJECT_DIR$/.idea/modules/timetablelayout/TimetableLayout.timetablelayout.iml" />
+    </modules>
+  </component>
+</project>
