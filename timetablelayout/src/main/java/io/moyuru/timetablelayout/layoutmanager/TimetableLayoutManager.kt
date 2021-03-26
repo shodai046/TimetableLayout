@@ -16,14 +16,15 @@ import androidx.recyclerview.widget.RecyclerView.State
 import io.moyuru.timetablelayout.BuildConfig
 import io.moyuru.timetablelayout.adapterPosition
 import io.moyuru.timetablelayout.getOrPut
+import java.time.LocalTime
 import java.util.concurrent.TimeUnit
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
 
 class Event(var eventName:String = "",
-                   var startTime:Long = 0,
-                   var endTime:Long = 0)
+            var startTime: LocalTime,
+            var endTime:LocalTime)
 
 class TimetableLayoutManager(
   private val columnWidth: Int,
@@ -34,8 +35,6 @@ class TimetableLayoutManager(
   companion object {
     private const val NO_TIME = -1
   }
-
-  class PeriodInfo(val startUnixMillis: Long, val endUnixMillis: Long, val columnNumber: Int)
 
   private data class Period(
     val startUnixMin: Int,
@@ -104,7 +103,7 @@ class TimetableLayoutManager(
   private val periods = ArrayList<Period>()
 
   //(Int, ArrayList<Period>) 一列ごとにPeriodの情報を保持
-  private val columns = SparseArray<ArrayList<Period>>()
+  private val columns = SparseArray<ArrayList<Event>>()
   private val anchor = Anchor()
 
   private var firstStartUnixMin = NO_TIME
@@ -271,7 +270,6 @@ class TimetableLayoutManager(
     val actualDx = calculateHorizontallyScrollAmount(dx, getDecoratedLeft(leftView), getDecoratedRight(rightView))
     //移動量0なら変更はなし
     if (actualDx == 0) return 0
-    var a = getDecoratedRight(leftView)
 
     //全てのViewを一括で水平移動
     offsetChildrenHorizontal(-actualDx)
@@ -679,9 +677,10 @@ class TimetableLayoutManager(
     lastEndUnixMin = NO_TIME
 
     //itemの数だけcolumn生成
-    /*(0 until itemCount).forEach {
-      //periodInfo作成
-      val periodInfo = periodLookUp(it)
+    (0 until itemCount).forEach {
+
+
+
       //ArrayListを返す
       //現在のcolumn数に対応するcolumnを取得する（存在しない場合はput）
       val column:ArrayList<Period> = columns.getOrPut(periodInfo.columnNumber) { ArrayList() }
@@ -731,7 +730,7 @@ class TimetableLayoutManager(
       }
       if (periods == null || periods.isEmpty())
         logw("column $i is null or empty.")
-    }*/
+    }
   }
 
   private fun Int.isFirstColumn() = this == 0

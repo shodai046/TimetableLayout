@@ -8,9 +8,10 @@ import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.ViewHolder
 import io.moyuru.timetablelayout.layoutmanager.Event
 import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager
+import io.moyuru.timetablelayoutsample.adapter.TimeTableAdapter
 import io.moyuru.timetablelayoutsample.databinding.ActivityMainBinding
-import org.threeten.bp.LocalDateTime
 import org.threeten.bp.ZoneOffset
+import java.time.LocalTime
 
 
 class MainActivity : AppCompatActivity() {
@@ -31,8 +32,8 @@ class MainActivity : AppCompatActivity() {
     //リスト作成
     val eventList = mutableListOf<Event>()
     eventList.add(Event("Fishing",
-      LocalDateTime.of(2019, 6, 1, 12, 0).toEpochSecond(ZoneOffset.UTC) * 1000,
-      LocalDateTime.of(2019, 6, 1, 14, 0).toEpochSecond(ZoneOffset.UTC) * 1000))
+      LocalTime.of(0,0),
+      LocalTime.of(23, 0)))
 
     //マップ作成
     val eventSchedule:MutableMap<String,MutableList<Event>> = mutableMapOf<String, MutableList<Event>>()
@@ -54,6 +55,6 @@ class MainActivity : AppCompatActivity() {
         heightPerMin,
         eventSchedule
       )
-    binding.recyclerView.adapter = adapter
+    binding.recyclerView.adapter = TimeTableAdapter(this,eventSchedule)
   }
 }

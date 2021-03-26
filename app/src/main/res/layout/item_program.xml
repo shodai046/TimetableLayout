@@ -5,27 +5,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     >
 
-  <data>
-
-    <variable
-        name="program"
-        type="io.moyuru.timetablelayoutsample.model.Program"
-        />
-  </data>
-
   <androidx.constraintlayout.widget.ConstraintLayout
       android:layout_width="match_parent"
       android:layout_height="match_parent"
-      android:background="#10FFFFFF"
-      tools:background="#222"
-      >
+      android:background="#07FF7F">
 
     <TextView
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:gravity="center"
         android:padding="4dp"
-        android:text="@{program.bandName}"
         android:textColor="@android:color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
