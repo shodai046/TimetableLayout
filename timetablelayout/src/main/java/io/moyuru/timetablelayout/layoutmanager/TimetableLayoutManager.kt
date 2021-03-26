@@ -681,23 +681,26 @@ class TimetableLayoutManager(
     columns.clear()
 
     var columnNum = 0
-    var periodNum = 0
+    var eventNum = 0
+    var totalEventNum = 0
 
     //列ごとにEventListを取り出す
     eventSchedule.forEach { s, mutableList ->
-      //EventList
-      val column:ArrayList<Event> = columns.getOrPut(columnNum){ArrayList()}
-
       //EventListからEventを取り出す
       mutableList.forEach {
+        //EventList
+        val column:ArrayList<Event> = columns.getOrPut(columnNum){ArrayList()}
+
         //globalなEventListに追加
         it.columnNumber = columnNum
-        it.positionInColumn = periodNum
+        it.positionInColumn = eventNum
+        it.adapterPosition = totalEventNum
+        //イベントを追加
         events.add(it)
-        periodNum++
+        eventNum++
+        totalEventNum++
       }
-
-      periodNum = 0
+      eventNum = 0
       columnNum++
     }
   }

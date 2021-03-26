@@ -34,8 +34,22 @@ class MainActivity : AppCompatActivity() {
     eventList.add(
       Event(
         "Fishing",
-        LocalTime.of(0, 0),
-        LocalTime.of(23, 0)
+        LocalTime.of(2, 0),
+        LocalTime.of(6, 0)
+      )
+    )
+    eventList.add(
+      Event(
+        "Night",
+        LocalTime.of(7, 0),
+        LocalTime.of(12, 0)
+      )
+    )
+    eventList.add(
+      Event(
+        "Morning",
+        LocalTime.of(14, 0),
+        LocalTime.of(17, 0)
       )
     )
 
