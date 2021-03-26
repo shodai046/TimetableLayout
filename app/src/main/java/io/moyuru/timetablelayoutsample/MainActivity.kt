@@ -6,8 +6,8 @@ import androidx.databinding.DataBindingUtil
 import com.jakewharton.threetenabp.AndroidThreeTen
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.ViewHolder
-import io.moyuru.timetablelayout.layoutmanager.Event
 import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager
+import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager.Event
 import io.moyuru.timetablelayoutsample.adapter.TimeTableAdapter
 import io.moyuru.timetablelayoutsample.databinding.ActivityMainBinding
 import org.threeten.bp.ZoneOffset
@@ -31,9 +31,13 @@ class MainActivity : AppCompatActivity() {
 
     //リスト作成
     val eventList = mutableListOf<Event>()
-    eventList.add(Event("Fishing",
-      LocalTime.of(0,0),
-      LocalTime.of(23, 0)))
+    eventList.add(
+      Event(
+        "Fishing",
+        LocalTime.of(0, 0),
+        LocalTime.of(23, 0)
+      )
+    )
 
     //マップ作成
     val eventSchedule:MutableMap<String,MutableList<Event>> = mutableMapOf<String, MutableList<Event>>()

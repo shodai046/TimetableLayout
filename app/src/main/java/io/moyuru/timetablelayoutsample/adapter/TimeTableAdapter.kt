@@ -5,7 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import io.moyuru.timetablelayout.layoutmanager.Event
+import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager.Event
 import io.moyuru.timetablelayoutsample.R
 
 class TimeTableAdapter(private val context:Context, private val mPeriods: MutableMap<String,MutableList<Event>>) :
