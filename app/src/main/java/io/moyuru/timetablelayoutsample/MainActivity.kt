@@ -33,16 +33,16 @@ class MainActivity : AppCompatActivity() {
     val eventList = mutableListOf<Event>()
     eventList.add(
       Event(
-        "Fishing",
-        LocalTime.of(2, 0),
-        LocalTime.of(6, 0)
+        "Night",
+        LocalTime.of(7, 0),
+        LocalTime.of(20, 0)
       )
     )
     eventList.add(
       Event(
-        "Night",
-        LocalTime.of(7, 0),
-        LocalTime.of(12, 0)
+        "Fishing",
+        LocalTime.of(2, 0),
+        LocalTime.of(6, 0)
       )
     )
     eventList.add(
@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
     //マップ作成
     val eventSchedule:MutableMap<String,MutableList<Event>> = mutableMapOf<String, MutableList<Event>>()
     eventSchedule.put("Yano", eventList)
+    eventSchedule.put("Tanaka", eventList)
 
     //高さを取得
     val heightPerMin = resources.getDimensionPixelSize(R.dimen.heightPerMinute)

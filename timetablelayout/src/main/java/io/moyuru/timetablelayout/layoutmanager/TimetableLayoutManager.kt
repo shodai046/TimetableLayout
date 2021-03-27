@@ -353,24 +353,27 @@ class TimetableLayoutManager(
   }
 
   private fun addPeriod(
-    period: Period,
+    event: Event,
     direction: Direction,
     offsetX: Int,
     offsetY: Int,
     recycler: Recycler
   ): Pair<Int, Int> {
     //adapterPositionに対応するViewを返す
-    val view = recycler.getViewForPosition(period.adapterPosition)
+    val view = recycler.getViewForPosition(event.adapterPosition)
     //レイアウトにViewを追加
     addView(view)
-    //
-    measureChild(view, period)
+    //子viewのサイズを計算
+    measureChild(view, event)
+    //子viewの幅、高さを取得
     val width = getDecoratedMeasuredWidth(view)
     val height = getDecoratedMeasuredHeight(view)
+    //子Viewの座標を計算
     val left = if (direction == Direction.LEFT) offsetX - width else offsetX
     val top = if (direction == Direction.TOP) offsetY - height else offsetY
     val right = left + width
     val bottom = top + height
+    //子Viewをレイアウトに配置
     layoutDecorated(view, left, top, right, bottom)
     return width to height
   }
@@ -401,7 +404,7 @@ class TimetableLayoutManager(
     }
     return (offsetY - startY).absoluteValue
   }
-
+  //一行分、レイアウトに配置する
   private fun addColumn(
     startEvent: Event,
     offsetX: Int,
@@ -410,15 +413,15 @@ class TimetableLayoutManager(
     recycler: Recycler
   ): Int {
     //Columnの列数を取得
-    //val columnNum = startEvent.columnNumber
-    //val periods = columns[columnNum] ?: return 0
+    val columnNum = startEvent.columnNumber
+    val events = columns[columnNum] ?: return 0
     val direction = if (isAppend) Direction.RIGHT else Direction.LEFT
     var offsetY = startY
     var columnWidth = 0
-    /*for (i in startPeriod.positionInColumn until periods.size) {
-      val period = periods[i]
-      //Periodの幅と高さを取得
-      //val (width, height) = addPeriod(period, direction, offsetX, offsetY, recycler)
+    for (i in startEvent.positionInColumn until events.size) {
+      val event = events[i]
+      //Eventを一つずつレイアウトに配置する
+      val (width, height) = addPeriod(event, direction, offsetX, offsetY, recycler)
 
       //高さ方向のoffsetを更新
       offsetY += height
@@ -428,7 +431,7 @@ class TimetableLayoutManager(
       //if (i == startPeriod.positionInColumn) anchor.top.put(columnNum, period.adapterPosition)
       //anchor.bottom.put(columnNum, period.adapterPosition)
       if (offsetY > parentBottom) break
-    }*/
+    }
     return columnWidth
   }
 
@@ -557,12 +560,15 @@ class TimetableLayoutManager(
     }
   }
 
-  private fun measureChild(view: View, period: Period) {
+  private fun measureChild(view: View, event: Event) {
     val lp = view.layoutParams as RecyclerView.LayoutParams
     lp.width = columnWidth
-    lp.height = period.durationMin * heightPerMinute
+    val endTime = event.endTime.hour *60 *60 + event.endTime.minute *60 +event.endTime.second
+    val startTime = event.startTime.hour *60 *60 + event.startTime.minute *60 +event.startTime.second
+    lp.height = (endTime-startTime)/1000* heightPerMinute
 
     val insets = Rect().apply { calculateItemDecorationsForChild(view, this) }
+    //measureSpecの計算（横）
     val widthSpec = getChildMeasureSpec(
       width,
       widthMode,
@@ -570,6 +576,7 @@ class TimetableLayoutManager(
       lp.width,
       true
     )
+    //measureSpecの計算（縦）
     val heightSpec = getChildMeasureSpec(
       height,
       heightMode,
@@ -577,6 +584,7 @@ class TimetableLayoutManager(
       lp.height,
       true
     )
+    //子viewのサイズを計算させる
     view.measure(widthSpec, heightSpec)
   }
 
@@ -686,17 +694,15 @@ class TimetableLayoutManager(
 
     //列ごとにEventListを取り出す
     eventSchedule.forEach { s, mutableList ->
+      //EventList
+      val column:ArrayList<Event> = columns.getOrPut(columnNum){ArrayList()}
       //EventListからEventを取り出す
       mutableList.forEach {
-        //EventList
-        val column:ArrayList<Event> = columns.getOrPut(columnNum){ArrayList()}
+        var event = Event(it.eventName,it.startTime,it.endTime,columnNum,totalEventNum,eventNum)
 
-        //globalなEventListに追加
-        it.columnNumber = columnNum
-        it.positionInColumn = eventNum
-        it.adapterPosition = totalEventNum
         //イベントを追加
-        events.add(it)
+        events.add(event)
+        column.add(event)
         eventNum++
         totalEventNum++
       }
