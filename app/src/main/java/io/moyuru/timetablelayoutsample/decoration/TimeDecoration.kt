@@ -3,7 +3,9 @@ package io.moyuru.timetablelayoutsample.decoration
 import android.content.Context
 import android.graphics.Color
 import androidx.core.content.ContextCompat
+import io.moyuru.timetablelayout.decoration.ColumnNameDecoration
 import io.moyuru.timetablelayout.decoration.TimeLabelDecoration
+import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager
 import io.moyuru.timetablelayoutsample.R
 import io.moyuru.timetablelayoutsample.model.Period
 import io.moyuru.timetablelayoutsample.model.Program
@@ -11,7 +13,7 @@ import org.threeten.bp.LocalDateTime
 import org.threeten.bp.ZoneOffset
 import org.threeten.bp.format.DateTimeFormatter
 
-class ProgramTimeLabelDecoration(context: Context, private val periods: List<Period>, heightPerMin: Int) :
+class TimeDecoration(context: Context, private val events: MutableMap<String,MutableList<TimetableLayoutManager.Event>>, heightPerMin: Int) :
   TimeLabelDecoration(
     context.resources.getDimensionPixelSize(R.dimen.timeLabelWidth),
     heightPerMin,

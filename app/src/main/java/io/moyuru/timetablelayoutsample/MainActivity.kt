@@ -2,29 +2,25 @@ package io.moyuru.timetablelayoutsample
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.databinding.DataBindingUtil
+import androidx.recyclerview.widget.RecyclerView
 import com.jakewharton.threetenabp.AndroidThreeTen
 import com.xwray.groupie.GroupAdapter
 import com.xwray.groupie.ViewHolder
 import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager
 import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager.Event
 import io.moyuru.timetablelayoutsample.adapter.TimeTableAdapter
-import io.moyuru.timetablelayoutsample.databinding.ActivityMainBinding
-import org.threeten.bp.ZoneOffset
+import io.moyuru.timetablelayoutsample.decoration.ProgramTimeLabelDecoration
+import io.moyuru.timetablelayoutsample.decoration.TimeDecoration
 import java.time.LocalTime
 
 
 class MainActivity : AppCompatActivity() {
 
-  private val binding by lazy {
-    DataBindingUtil.setContentView<ActivityMainBinding>(
-      this,
-      R.layout.activity_main
-    )
-  }
-
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
+    setContentView(R.layout.activity_main)
+
     AndroidThreeTen.init(this)
 
     val adapter = GroupAdapter<ViewHolder>()
@@ -35,16 +31,40 @@ class MainActivity : AppCompatActivity() {
       Event(
         "Night",
         LocalTime.of(7, 0),
-        LocalTime.of(20, 0)
+        LocalTime.of(8, 0)
       )
     )
     eventList.add(
       Event(
         "Fishing",
         LocalTime.of(2, 0),
-        LocalTime.of(6, 0)
+        LocalTime.of(9, 0)
       )
     )
+    eventList.add(
+      Event(
+        "Morning",
+        LocalTime.of(14, 0),
+        LocalTime.of(17, 0)
+      )
+    )
+
+    eventList.add(
+      Event(
+        "Morning",
+        LocalTime.of(14, 0),
+        LocalTime.of(17, 0)
+      )
+    )
+
+    eventList.add(
+      Event(
+        "Morning",
+        LocalTime.of(14, 0),
+        LocalTime.of(17, 0)
+      )
+    )
+
     eventList.add(
       Event(
         "Morning",
@@ -58,22 +78,29 @@ class MainActivity : AppCompatActivity() {
     eventSchedule.put("Yano", eventList)
     eventSchedule.put("Tanaka", eventList)
 
+    val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
+
     //高さを取得
     val heightPerMin = resources.getDimensionPixelSize(R.dimen.heightPerMinute)
     //区切り線を入れる
-    //binding.recyclerView.addItemDecoration(ProgramTimeLabelDecoration(this, periods, heightPerMin))
+    recyclerView.addItemDecoration(TimeDecoration(this, eventSchedule, heightPerMin))
     /*//区切り線を入れる
     binding.recyclerView.addItemDecoration(
       StageNameDecoration(this, periods, periods.distinctBy { it.stageNumber }.size)
     )*/
 
+    recyclerView.adapter = TimeTableAdapter(this,eventSchedule)
+
+    val timetableLayoutManager = TimetableLayoutManager(
+      resources.getDimensionPixelSize(R.dimen.columnWidth),
+      heightPerMin,
+      eventSchedule
+    )
+
+    //TimeTableLayoutの初期化
+    timetableLayoutManager.initializeTimeTable(LocalTime.of(0, 0), LocalTime.of(23, 59), 1)
+
     //レイアウトをセット
-    binding.recyclerView.layoutManager =
-      TimetableLayoutManager(
-        resources.getDimensionPixelSize(R.dimen.columnWidth),
-        heightPerMin,
-        eventSchedule
-      )
-    binding.recyclerView.adapter = TimeTableAdapter(this,eventSchedule)
+    recyclerView.layoutManager = timetableLayoutManager
   }
 }

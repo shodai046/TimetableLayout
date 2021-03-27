@@ -26,10 +26,11 @@ abstract class TimeLabelDecoration(
 
   private val backgroundPaint = Paint().apply { color = backgroundColor }
 
-  private val textHeight by lazy {
-    val text = formatUnixMillis(System.currentTimeMillis())
+  /*private val textHeight by lazy {
+
+    // val text = formatUnixMillis(System.currentTimeMillis())
     Rect().apply { textPaint.getTextBounds(text, 0, text.lastIndex, this) }.height()
-  }
+  }*/
 
   //アイテムが描画された後に呼び出される
   override fun onDrawOver(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
@@ -43,15 +44,13 @@ abstract class TimeLabelDecoration(
     if (parent.childCount < 0) return
 
     //adapterからStartAt取得
-    val startAtList:List<Long> = (0 until adapter.itemCount).map(this::getStartUnixMillis)
+    //val startAtList:List<Long> = (0 until adapter.itemCount).map(this::getStartUnixMillis)
 
     val base = parent.children.filter { it.top <= parent.paddingTop }.minBy { it.top } ?: return
-    val baseEpochMillis = startAtList.getOrNull(base.layoutPosition) ?: return
+    //val baseEpochMillis = startAtList.getOrNull(base.layoutPosition) ?: return
 
     val height = parent.height
     val num = height/(60*heightPerMinute)
-
-
 
 
     /*for(i in 0 .. num){
@@ -64,7 +63,7 @@ abstract class TimeLabelDecoration(
       )
     }*/
 
-    startAtList
+    /*startAtList
       .filterIndexed { i, startAt -> startAt >= baseEpochMillis && canDecorate(i) }
       .distinct()
       .forEach { startAt ->
@@ -75,12 +74,12 @@ abstract class TimeLabelDecoration(
           Rect(0, top.toInt(), width, (top + textHeight).toInt()),
           textPaint
         )
-      }
+      }*/
   }
 
-  protected abstract fun canDecorate(position: Int): Boolean
+ /* protected abstract fun canDecorate(position: Int): Boolean
 
   protected abstract fun getStartUnixMillis(position: Int): Long
 
-  protected abstract fun formatUnixMillis(unixMillis: Long): String
+  protected abstract fun formatUnixMillis(unixMillis: Long): String*/
 }
