@@ -23,8 +23,6 @@ class MainActivity : AppCompatActivity() {
 
     AndroidThreeTen.init(this)
 
-    val adapter = GroupAdapter<ViewHolder>()
-
     //リスト作成
     val eventListA = mutableListOf<Event>()
     eventListA.add(
@@ -103,7 +101,6 @@ class MainActivity : AppCompatActivity() {
       )
     )
 
-
     val nameList = mutableListOf("Yano","Tanaka","Yamamoto")
 
     //マップ作成
@@ -111,8 +108,6 @@ class MainActivity : AppCompatActivity() {
     eventSchedule[nameList[0]] = eventListA
     eventSchedule[nameList[1]] = eventListB
     eventSchedule[nameList[2]] = eventListC
-
-
 
     val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
 
@@ -124,19 +119,20 @@ class MainActivity : AppCompatActivity() {
       heightPerMin,
       eventSchedule
     )
-
     //TimeTableの生成
     val timeTable = timetableLayoutManager.createTimeTable()
 
     //区切り線を入れる
-    recyclerView.addItemDecoration(TimeDecoration(this, eventSchedule, heightPerMin))
+    recyclerView.addItemDecoration(TimeDecoration(this, heightPerMin))
     //区切り線を入れる
-    recyclerView.addItemDecoration(NameDecoration(this, timeTable, eventSchedule.size, nameList))
-
-
+    recyclerView.addItemDecoration(NameDecoration(
+      context = this,
+      timeTableItems =  timeTable,
+      columnCount = eventSchedule.size,
+      nameList = nameList
+    ))
+    //Adapterをセット
     recyclerView.adapter = TimeTableAdapter(this,timeTable)
-
-
     //レイアウトをセット
     recyclerView.layoutManager = timetableLayoutManager
   }

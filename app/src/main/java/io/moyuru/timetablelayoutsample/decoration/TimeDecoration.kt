@@ -13,7 +13,7 @@ import org.threeten.bp.LocalDateTime
 import org.threeten.bp.ZoneOffset
 import org.threeten.bp.format.DateTimeFormatter
 
-class TimeDecoration(context: Context, private val events: MutableMap<String,MutableList<TimetableLayoutManager.Event>>, heightPerMin: Int) :
+class TimeDecoration(context: Context, heightPerMin: Int) :
   TimeLabelDecoration(
     context.resources.getDimensionPixelSize(R.dimen.timeLabelWidth),
     heightPerMin,
