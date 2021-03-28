@@ -18,8 +18,8 @@ class TimeDecoration(context: Context, private val events: MutableMap<String,Mut
     context.resources.getDimensionPixelSize(R.dimen.timeLabelWidth),
     heightPerMin,
     context.resources.getDimension(R.dimen.timeLabelTextSize),
-    Color.WHITE,
-    ContextCompat.getColor(context, R.color.black)
+    Color.BLACK,
+    ContextCompat.getColor(context, R.color.white)
   ) {
 
   private val formatter = DateTimeFormatter.ofPattern("HH:mm")

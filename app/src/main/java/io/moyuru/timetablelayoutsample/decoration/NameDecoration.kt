@@ -8,27 +8,18 @@ import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager
 import io.moyuru.timetablelayoutsample.R
 import io.moyuru.timetablelayoutsample.model.Period
 
-class NameDecoration(context: Context, private val events: MutableMap<String,MutableList<TimetableLayoutManager.Event>>,columnCount:Int) :
+class NameDecoration(context: Context, private val timeTableItems: List<TimetableLayoutManager.TimeTableItem>,columnCount:Int, private val nameList:List<String>) :
   ColumnNameDecoration(
     columnCount,
     context.resources.getDimensionPixelSize(R.dimen.columnWidth),
     context.resources.getDimensionPixelSize(R.dimen.stageLabelHeight),
     context.resources.getDimension(R.dimen.stageLabelTextSize),
-    Color.WHITE,
-    ContextCompat.getColor(context, R.color.black)
+    Color.BLACK,
+    ContextCompat.getColor(context, R.color.white)
   ) {
 
-  /*override fun getColumnNumber(position: Int): Int {
-    return periods.getOrNull(position)?.stageNumber ?: 0
-  }*/
+  override fun getColumnNumber(position: Int): Int = timeTableItems[position].columnNumber
 
-  override fun getColumnName(columnNumber: Int): String {
-    return when (columnNumber) {
-      0 -> "Melodic Hardcore"
-      1 -> "Metalcore"
-      2 -> "Hardcore"
-      3 -> "Deathcore"
-      else -> "Djent"
-    }
-  }
+
+  override fun getColumnName(columnNumber: Int): String = nameList[columnNumber]
 }

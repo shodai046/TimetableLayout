@@ -10,9 +10,8 @@ import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager
 import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager.Event
 import io.moyuru.timetablelayoutsample.adapter.TimeTableAdapter
 import io.moyuru.timetablelayoutsample.decoration.NameDecoration
-import io.moyuru.timetablelayoutsample.decoration.ProgramTimeLabelDecoration
 import io.moyuru.timetablelayoutsample.decoration.TimeDecoration
-import java.time.LocalTime
+import org.threeten.bp.LocalTime
 
 
 class MainActivity : AppCompatActivity() {
@@ -27,22 +26,68 @@ class MainActivity : AppCompatActivity() {
     val adapter = GroupAdapter<ViewHolder>()
 
     //リスト作成
-    val eventList = mutableListOf<Event>()
-    eventList.add(
+    val eventListA = mutableListOf<Event>()
+    eventListA.add(
       Event(
         "Night",
-        LocalTime.of(7, 0),
+        LocalTime.of(2, 20),
+        LocalTime.of(4, 40)
+      )
+    )
+    eventListA.add(
+      Event(
+        "Fishing",
+        LocalTime.of(6, 0),
         LocalTime.of(8, 0)
       )
     )
-    eventList.add(
+    eventListA.add(
+      Event(
+        "Morning",
+        LocalTime.of(14, 0),
+        LocalTime.of(17, 0)
+      )
+    )
+
+    val eventListB = mutableListOf<Event>()
+    eventListB.add(
+      Event(
+        "Night",
+        LocalTime.of(2, 0),
+        LocalTime.of(4, 0)
+      )
+    )
+    eventListB.add(
       Event(
         "Fishing",
+        LocalTime.of(6, 0),
+        LocalTime.of(8, 0)
+      )
+    )
+    eventListB.add(
+      Event(
+        "Morning",
+        LocalTime.of(14, 0),
+        LocalTime.of(17, 0)
+      )
+    )
+
+    val eventListC = mutableListOf<Event>()
+    eventListC.add(
+      Event(
+        "Night",
         LocalTime.of(2, 0),
-        LocalTime.of(9, 0)
+        LocalTime.of(4, 0)
       )
     )
-    eventList.add(
+    eventListC.add(
+      Event(
+        "Fishing",
+        LocalTime.of(6, 0),
+        LocalTime.of(8, 0)
+      )
+    )
+    eventListC.add(
       Event(
         "Morning",
         LocalTime.of(14, 0),
@@ -50,45 +95,29 @@ class MainActivity : AppCompatActivity() {
       )
     )
 
-    eventList.add(
+    eventListC.add(
       Event(
         "Morning",
-        LocalTime.of(14, 0),
-        LocalTime.of(17, 0)
+        LocalTime.of(18, 20),
+        LocalTime.of(23, 50)
       )
     )
 
-    eventList.add(
-      Event(
-        "Morning",
-        LocalTime.of(14, 0),
-        LocalTime.of(17, 0)
-      )
-    )
 
-    eventList.add(
-      Event(
-        "Morning",
-        LocalTime.of(14, 0),
-        LocalTime.of(17, 0)
-      )
-    )
+    val nameList = mutableListOf("Yano","Tanaka","Yamamoto")
 
     //マップ作成
     val eventSchedule:MutableMap<String,MutableList<Event>> = mutableMapOf<String, MutableList<Event>>()
-    eventSchedule.put("Yano", eventList)
-    eventSchedule.put("Tanaka", eventList)
+    eventSchedule[nameList[0]] = eventListA
+    eventSchedule[nameList[1]] = eventListB
+    eventSchedule[nameList[2]] = eventListC
+
+
 
     val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
 
     //高さを取得
     val heightPerMin = resources.getDimensionPixelSize(R.dimen.heightPerMinute)
-    //区切り線を入れる
-    recyclerView.addItemDecoration(TimeDecoration(this, eventSchedule, heightPerMin))
-    //区切り線を入れる
-    recyclerView.addItemDecoration(NameDecoration(this, eventSchedule,eventSchedule.size))
-
-    recyclerView.adapter = TimeTableAdapter(this,eventSchedule)
 
     val timetableLayoutManager = TimetableLayoutManager(
       resources.getDimensionPixelSize(R.dimen.columnWidth),
@@ -96,8 +125,17 @@ class MainActivity : AppCompatActivity() {
       eventSchedule
     )
 
-    //TimeTableLayoutの初期化
-    timetableLayoutManager.initializeTimeTable(LocalTime.of(0, 0), LocalTime.of(23, 59), 1)
+    //TimeTableの生成
+    val timeTable = timetableLayoutManager.createTimeTable()
+
+    //区切り線を入れる
+    recyclerView.addItemDecoration(TimeDecoration(this, eventSchedule, heightPerMin))
+    //区切り線を入れる
+    recyclerView.addItemDecoration(NameDecoration(this, timeTable, eventSchedule.size, nameList))
+
+
+    recyclerView.adapter = TimeTableAdapter(this,timeTable)
+
 
     //レイアウトをセット
     recyclerView.layoutManager = timetableLayoutManager

@@ -8,7 +8,6 @@ import android.util.SparseArray
 import android.util.SparseIntArray
 import android.view.View
 import androidx.core.util.forEach
-import androidx.core.util.size
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.NO_POSITION
 import androidx.recyclerview.widget.RecyclerView.Recycler
@@ -16,11 +15,9 @@ import androidx.recyclerview.widget.RecyclerView.State
 import io.moyuru.timetablelayout.BuildConfig
 import io.moyuru.timetablelayout.adapterPosition
 import io.moyuru.timetablelayout.getOrPut
-import java.time.LocalTime
-import java.util.concurrent.TimeUnit
-import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
+import org.threeten.bp.LocalTime
 
 
 class TimetableLayoutManager(
@@ -30,16 +27,28 @@ class TimetableLayoutManager(
 ) : RecyclerView.LayoutManager() {
 
   companion object {
-    private const val NO_TIME = -1
     private const val NOT_SET = -1
   }
 
+  abstract class TimeTableItem(
+    open var startTime: LocalTime,
+    open var endTime:LocalTime,
+    open var columnNumber: Int = NOT_SET,
+    open var adapterPosition: Int = NOT_SET,
+    open var positionInColumn: Int = NOT_SET)
+
   class Event(var eventName:String = "",
-              var startTime: LocalTime,
-              var endTime:LocalTime,
-              var columnNumber: Int = NOT_SET,
-              var adapterPosition: Int = NOT_SET,
-              var positionInColumn: Int = NOT_SET)
+              override var startTime: LocalTime,
+              override var endTime:LocalTime,
+              override var columnNumber: Int = NOT_SET,
+              override var adapterPosition: Int = NOT_SET,
+              override var positionInColumn: Int = NOT_SET):TimeTableItem(startTime, endTime, columnNumber, adapterPosition, positionInColumn)
+
+  class Margin(override var startTime: LocalTime,
+               override var endTime:LocalTime,
+               override var columnNumber: Int = NOT_SET,
+               override var adapterPosition: Int = NOT_SET,
+               override var positionInColumn: Int = NOT_SET):TimeTableItem(startTime, endTime, columnNumber, adapterPosition, positionInColumn)
 
   private class Anchor {
     val top = SparseIntArray()
@@ -96,9 +105,10 @@ class TimetableLayoutManager(
   private val parentBottom get() = height - paddingBottom
 
   private val events = ArrayList<Event>()
+  private val timeTableItems = ArrayList<TimeTableItem>()
 
   //(Int, ArrayList<Period>) 一列ごとにPeriodの情報を保持
-  private val columns = SparseArray<ArrayList<Event>>()
+  private val columns = SparseArray<ArrayList<TimeTableItem>>()
   private val anchor = Anchor()
 
   private var firstStartTime = LocalTime.of(0, 0)
@@ -162,7 +172,6 @@ class TimetableLayoutManager(
       detachAndScrapAttachedViews(recycler)
       events.getOrNull(pendingScrollPosition)?.let { event ->
         anchor.leftColumn = event.columnNumber
-        //fillHorizontalChunk(event.columnNumber, parentLeft, parentTop, event, true, recycler)
         fixBottomLayoutGap(recycler)
       }
       return
@@ -179,7 +188,6 @@ class TimetableLayoutManager(
 
     if (restoredOffsetX != null && restoredOffsetY != null && restoredPeriod != null) {
       anchor.leftColumn = restoredPeriod.columnNumber
-      //fillHorizontalChunk(restoredPeriod.columnNumber, restoredOffsetX, restoredOffsetY, restoredPeriod, true, recycler)
     } else {
       //0が入るはず
       anchor.leftColumn = columns.keyAt(0)
@@ -220,37 +228,6 @@ class TimetableLayoutManager(
     val actualDy = calculateVerticallyScrollAmount(dy)
     if (actualDy == 0) return 0
     offsetChildrenVertical(-actualDy)
-    if (actualDy > 0) {
-      // recycle
-      recycleTop(recycler)
-
-      // append
-      /*anchor.bottom.forEach { columnNum, position ->
-        val view = findViewByPosition(position) ?: return@forEach
-        val bottom = getDecoratedBottom(view)
-        if (bottom < parentBottom) {
-          val left = getDecoratedLeft(view)
-          val period = periods.getOrNull(position) ?: return@forEach
-          val nextPeriod = columns.get(columnNum).getOrNull(period.positionInColumn + 1) ?: return@forEach
-          addPeriodsToColumn(nextPeriod, left, bottom, true, recycler)
-        }
-      }*/
-    } else {
-      // recycle
-      recycleBottom(recycler)
-
-      // prepend
-      /*anchor.top.forEach { columnNum, position ->
-        val view = findViewByPosition(position) ?: return@forEach
-        val top = getDecoratedTop(view)
-        if (top > parentTop) {
-          val left = getDecoratedLeft(view)
-          val period = periods.getOrNull(position) ?: return@forEach
-          val nextPeriod = columns.get(columnNum).getOrNull(period.positionInColumn - 1) ?: return@forEach
-          addPeriodsToColumn(nextPeriod, left, top, false, recycler)
-        }
-      }*/
-    }
     return actualDy
   }
 
@@ -269,36 +246,6 @@ class TimetableLayoutManager(
 
     //全てのViewを一括で水平移動
     offsetChildrenHorizontal(-actualDx)
-    //すでに移動した後なので、actualDxが反映済み
-    if (actualDx > 0) {
-      // recycle（右側にリサイクル）
-      //左端のviewが完全に見えなくなったら
-      if (getDecoratedRight(leftView) < parentLeft) recycleLeft(recycler)
-
-      // append
-      val right = getDecoratedRight(rightView)
-      if (right < parentRight) {
-        val topView = findTopView() ?: return 0
-        val top = getDecoratedTop(topView)
-        val topPeriod = events[topView.adapterPosition]
-        val nextColumn = anchor.rightColumn.getNextColumn()
-        //fillHorizontalChunk(nextColumn, right, top, topPeriod, true, recycler)
-      }
-    } else if (actualDx <= 0)  {
-      // recycle（左側にリサイクル）
-      //右端のviewが完全に見えなくなったら
-      if (getDecoratedLeft(rightView) > parentRight) recycleRight(recycler)
-
-      // prepend
-      val left = getDecoratedLeft(leftView)
-      if (left > parentLeft) {
-        val topView = findTopView() ?: return 0
-        val top = getDecoratedTop(topView)
-        val topPeriod = events[topView.adapterPosition]
-        val previousColumn = anchor.leftColumn.getPreviousColumn()
-        //fillHorizontalChunk(previousColumn, left, top, topPeriod, false, recycler)
-      }
-    }
 
     return dx
   }
@@ -306,12 +253,10 @@ class TimetableLayoutManager(
   private fun calculateVerticallyScrollAmount(dy: Int): Int {
     return if (dy > 0) {
       val bottomView = findBottomView() ?: return 0
-      val event = events.getOrNull(bottomView.adapterPosition) ?: return 0
       val bottom = getDecoratedBottom(bottomView)
       if (bottom == parentBottom) 0 else min(dy, bottom - parentBottom)
     } else {
       val topView = findTopView() ?: return 0
-      val event = events.getOrNull(topView.adapterPosition) ?: return 0
       val top = getDecoratedTop(topView)
       if (top == parentTop) 0 else max(dy, top - parentTop)
     }
@@ -321,12 +266,6 @@ class TimetableLayoutManager(
    * left rightはめり込む
    */
   private fun calculateHorizontallyScrollAmount(dx: Int, left: Int, right: Int): Int {
-    //左列が最初の列、もしくは右列が最後の列以外ならそのまま移動量を返す
-    //全列画面に入りきらない場合は絶対ここでreturn
-    //if (!anchor.leftColumn.isFirstColumn()) return dx
-    //if (!anchor.rightColumn.isLastColumn()) return dx
-
-    //それ以外の場合
     return if (dx > 0) {
       //最終列の場合
       if (anchor.rightColumn.isLastColumn())
@@ -341,7 +280,7 @@ class TimetableLayoutManager(
   }
 
   private fun addPeriod(
-    event: Event,
+    event: TimeTableItem,
     direction: Direction,
     offsetX: Int,
     offsetY: Int,
@@ -361,40 +300,15 @@ class TimetableLayoutManager(
     val top = if (direction == Direction.TOP) offsetY - height else offsetY
     val right = left + width
     val bottom = top + height
+
     //子Viewをレイアウトに配置
     layoutDecorated(view, left, top, right, bottom)
     return width to height
   }
 
-  private fun addPeriodsToColumn(
-    startPeriod: Event,
-    offsetX: Int,
-    startY: Int,
-    isAppend: Boolean,
-    recycler: Recycler
-  ): Int {
-    val column = columns.get(startPeriod.columnNumber) ?: return 0
-    val direction = if (isAppend) Direction.BOTTOM else Direction.TOP
-    var offsetY = startY
-    val range = if (isAppend) startPeriod.positionInColumn until column.size else startPeriod.positionInColumn downTo 0
-    for (i in range) {
-      val period = column[i]
-      //val (_, height) = addPeriod(period, direction, offsetX, offsetY, recycler)
-      if (isAppend) {
-        //anchor.bottom.put(period.columnNumber, period.adapterPosition)
-        offsetY += height
-        if (offsetY > parentBottom) return offsetY - startY
-      } else {
-        //anchor.top.put(period.columnNumber, period.adapterPosition)
-        offsetY -= height
-        if (offsetY < parentTop) return startY - offsetY
-      }
-    }
-    return (offsetY - startY).absoluteValue
-  }
   //一行分、レイアウトに配置する
   private fun addColumn(
-    startEvent: Event,
+    startEvent: TimeTableItem,
     offsetX: Int,
     startY: Int,
     isAppend: Boolean,
@@ -402,128 +316,25 @@ class TimetableLayoutManager(
   ): Int {
     //Columnの列数を取得
     val columnNum = startEvent.columnNumber
-    val events = columns[columnNum] ?: return 0
+    val timeTableColumn = columns[columnNum] ?: return 0
     val direction = if (isAppend) Direction.RIGHT else Direction.LEFT
     var offsetY = startY
     var columnWidth = 0
-    for (i in startEvent.positionInColumn until events.size) {
-      val event = events[i]
+    for (i in startEvent.positionInColumn until timeTableColumn.size) {
+      val timeTableItem = timeTableColumn[i]
       //Eventを一つずつレイアウトに配置する
-      val (width, height) = addPeriod(event, direction, offsetX, offsetY, recycler)
+      val (width, height) = addPeriod(timeTableItem, direction, offsetX, offsetY, recycler)
 
       //高さ方向のoffsetを更新
       offsetY += height
       //幅についてはそのままreturnする
       columnWidth = width
 
-      if (i == startEvent.positionInColumn) anchor.top.put(columnNum, event.adapterPosition)
-      anchor.bottom.put(columnNum, event.adapterPosition)
-      if (offsetY > parentBottom) break
+      if (i == startEvent.positionInColumn) anchor.top.put(columnNum, timeTableItem.adapterPosition)
+      anchor.bottom.put(columnNum, timeTableItem.adapterPosition)
+      //if (offsetY > parentBottom) break
     }
     return columnWidth
-  }
-
-  /*private fun fillHorizontalChunk(
-    startColumnNum: Int,
-    startX: Int,
-    baseY: Int,
-    basePeriod: Event,
-    isAppend: Boolean,
-    recycler: Recycler
-  ): Int {
-    val lastColumnNum = columns.size - 1
-    val range = if (isAppend) {
-      if (startColumnNum > 0) (startColumnNum..lastColumnNum) + (0 until startColumnNum)
-      else startColumnNum..lastColumnNum
-    } else {
-      if (startColumnNum < lastColumnNum) (startColumnNum downTo 0) + (lastColumnNum downTo startColumnNum + 1)
-      else (startColumnNum downTo 0)
-    }
-
-    var offsetX = startX
-    val added = arrayListOf<Int>()
-    for (nextColumnNum in range) {
-      val startPeriod = calculateStartPeriodInColumn(nextColumnNum, baseY, basePeriod) ?: continue
-      val offsetY = baseY + (startPeriod.startUnixMin - basePeriod.startUnixMin) * heightPerMinute
-      //val width = addColumn(startPeriod, offsetX, offsetY, isAppend, recycler)
-      added += nextColumnNum
-      if (isAppend) {
-        anchor.rightColumn = nextColumnNum
-        offsetX += width
-      } else {
-        anchor.leftColumn = nextColumnNum
-        offsetX -= width
-      }
-      if (isAppend && offsetX > parentRight) break
-      if (!isAppend && offsetX < parentLeft) break
-    }
-
-    return (offsetX - startX).absoluteValue
-  }*/
-
-  private fun recycleTop(recycler: Recycler) {
-    (anchor.leftColumn..anchor.rightColumn).forEach { columnNum ->
-      val column = columns[columnNum]
-      val top = events[anchor.top[columnNum]]
-      val bottom = events[anchor.bottom[columnNum]]
-      column.subList(top.positionInColumn, bottom.positionInColumn).forEach { period ->
-        /*val view = findViewByPosition(period.adapterPosition) ?: return
-        if (getDecoratedBottom(view) >= parentTop) return
-
-        removeAndRecycleView(view, recycler)
-        val belowPosition = column[period.positionInColumn + 1].adapterPosition
-        anchor.top.put(columnNum, belowPosition)*/
-      }
-    }
-  }
-
-  private fun recycleBottom(recycler: Recycler) {
-    (anchor.leftColumn..anchor.rightColumn).forEach { columnNum ->
-      val column = columns[columnNum]
-      val top = events[anchor.top[columnNum]]
-      val bottom = events[anchor.bottom[columnNum]]
-      column.subList(top.positionInColumn, bottom.positionInColumn).asReversed().forEach { period ->
-        /*val view = findViewByPosition(period.adapterPosition) ?: return
-        if (getDecoratedTop(view) <= parentBottom) return
-
-        removeAndRecycleView(view, recycler)
-        val abovePosition = column[period.positionInColumn - 1].adapterPosition
-        anchor.bottom.put(columnNum, abovePosition)*/
-      }
-    }
-  }
-
-  private fun recycleLeft(recycler: Recycler) {
-    val removed = arrayListOf<Int>()
-    //最左~再右までのレンジを取得（例:0~3）
-    val range = if (anchor.rightColumn > anchor.leftColumn) (anchor.leftColumn..anchor.rightColumn)
-    //最左~再右までのレンジを取得（例:3~4 ＋ 0~1）
-    else (anchor.leftColumn until columns.size()) + (0..anchor.rightColumn)
-    range.forEach { columnNum ->
-      //列数に対応するviewを取得
-      val views = findViewsByColumn(columnNum)
-      val view = views.firstOrNull() ?: return@forEach
-      if (getDecoratedRight(view) >= parentLeft) return@forEach
-
-      views.forEach { removeAndRecycleView(it, recycler) }
-      //表示されていない列のリストに追加
-      removed += columnNum
-      //一番左の列を更新
-      anchor.leftColumn = anchor.leftColumn.getNextColumn()
-    }
-  }
-
-  private fun recycleRight(recycler: Recycler) {
-    val range = if (anchor.leftColumn < anchor.rightColumn) (anchor.rightColumn downTo anchor.leftColumn)
-    else (anchor.rightColumn downTo 0) + ((columns.size() - 1) downTo anchor.leftColumn)
-    range.forEach { columnNum ->
-      val views = findViewsByColumn(columnNum)
-      val view = views.firstOrNull() ?: return@forEach
-      if (getDecoratedLeft(view) <= parentRight) return@forEach
-
-      views.forEach { removeAndRecycleView(it, recycler) }
-      anchor.rightColumn = anchor.rightColumn.getPreviousColumn()
-    }
   }
 
   private fun fixBottomLayoutGap(recycler: Recycler) {
@@ -548,12 +359,10 @@ class TimetableLayoutManager(
     }
   }
 
-  private fun measureChild(view: View, event: Event) {
+  private fun measureChild(view: View, event: TimeTableItem) {
     val lp = view.layoutParams as RecyclerView.LayoutParams
     lp.width = columnWidth
-    val endTime = event.endTime.hour *60 *60 + event.endTime.minute *60 +event.endTime.second
-    val startTime = event.startTime.hour *60 *60 + event.startTime.minute *60 +event.startTime.second
-    lp.height = (endTime-startTime)/1000* heightPerMinute
+    lp.height = heightPerMinute*(event.endTime.toIntTime() -event.startTime.toIntTime())/1000
 
     val insets = Rect().apply { calculateItemDecorationsForChild(view, this) }
     //measureSpecの計算（横）
@@ -631,19 +440,11 @@ class TimetableLayoutManager(
       //表示されているviewをひとつずつ取得していく
       val view = getChildAt(layoutPosition) ?: return@forEach
       //取得したviewに対応するPeriodを取得
-      val period = events[view.adapterPosition]
+      val timeTableItem = timeTableItems[view.adapterPosition]
       //取得したperiodが一番左、もしくは右列のものだったらviewをreturnする
-      if (period.columnNumber == columnNumber) return view
+      if (timeTableItem.columnNumber == columnNumber) return view
     }
     return null
-  }
-
-  private fun findViewsByColumn(columnNumber: Int): List<View> {
-    return (0 until childCount).mapNotNull { layoutPosition ->
-      val view = getChildAt(layoutPosition) ?: return@mapNotNull null
-      val period = events[view.adapterPosition]
-      if (period.columnNumber == columnNumber) view else null
-    }
   }
 
   private fun findFirstVisibleView(): View? {
@@ -657,18 +458,6 @@ class TimetableLayoutManager(
       })
   }
 
-  private fun calculateStartPeriodInColumn(columnNumber: Int, top: Int, topPeriod: Event): Event? {
-    val periods = columns[columnNumber] ?: return null
-    var maxTopPeriod: Event? = null
-    /*periods.filter { it.startUnixMin <= topPeriod.endUnixMin && it.endUnixMin >= topPeriod.startUnixMin }
-      .forEach { period ->
-        val gapHeight = (period.startUnixMin - topPeriod.startUnixMin) * heightPerMinute
-        if (top + gapHeight <= parentTop)
-          maxTopPeriod = maxTopPeriod?.let { if (it.startUnixMin < period.startUnixMin) period else it } ?: period
-      }*/
-    return maxTopPeriod
-  }
-
   //列の計算
   //
   private fun calculateColumns() {
@@ -676,26 +465,9 @@ class TimetableLayoutManager(
     events.clear()
     columns.clear()
 
-    var columnNum = 0
-    var eventNum = 0
-    var totalEventNum = 0
-
-    //列ごとにEventListを取り出す
-    eventSchedule.forEach { s, mutableList ->
-      //EventList
-      val column:ArrayList<Event> = columns.getOrPut(columnNum){ArrayList()}
-      //EventListからEventを取り出す
-      mutableList.forEach {
-        var event = Event(it.eventName,it.startTime,it.endTime,columnNum,totalEventNum,eventNum)
-
-        //イベントを追加
-        events.add(event)
-        column.add(event)
-        eventNum++
-        totalEventNum++
-      }
-      eventNum = 0
-      columnNum++
+    timeTableItems.forEach {
+      val column:ArrayList<TimeTableItem> = columns.getOrPut(it.columnNumber){ArrayList()}
+      column.add(it)
     }
   }
 
@@ -703,17 +475,100 @@ class TimetableLayoutManager(
 
   private fun Int.isLastColumn() = this == columns.size() - 1
 
-  private fun Int.getNextColumn() = if (this == columns.size - 1) 0 else this + 1
-
-  private fun Int.getPreviousColumn() = if (this == 0) columns.size - 1 else this - 1
+  private fun LocalTime.toIntTime():Int= this.hour*60*60 + this.minute *60
 
   private fun logw(log: String) {
     if (BuildConfig.DEBUG) Log.w(TimetableLayoutManager::class.java.simpleName, log)
   }
-  
-  fun initializeTimeTable(startTime :LocalTime, endTime :LocalTime, durationHour:Int){
-    firstStartTime = startTime
-    lastEndTime = endTime
-    
+
+  fun createTimeTable() : MutableList<TimeTableItem>{
+    var columnNumber = 0
+    var adapterPosition = 0
+    var positionInColumn = 0
+
+    for(events in eventSchedule){
+      //eventListを取得
+      val eventList = events.value
+      //previousEventTImeをセット（リセット）
+      var previousEventTime = LocalTime.of(0,0)
+
+      //一つずつEventを見ていく
+      for(event in eventList){
+        //Margin発生
+        if(event.startTime > previousEventTime){
+          //Marginを計算
+          var margin =event.startTime.toIntTime() - previousEventTime.toIntTime()
+          //Marginがなくなるまでループ
+          while (margin > 0){
+            val plusMinutes = if(previousEventTime.minute!=60)(60-previousEventTime.minute).toLong() else 60
+            //Marginが1時間以上ある場合
+            if(margin >=3600){
+              timeTableItems.add(Margin(previousEventTime, previousEventTime.plusMinutes(plusMinutes),columnNumber,adapterPosition,positionInColumn))
+            } else {
+              timeTableItems.add(Margin(previousEventTime, event.startTime,columnNumber,adapterPosition,positionInColumn))
+            }
+            previousEventTime = previousEventTime.plusMinutes(plusMinutes)
+            adapterPosition++
+            positionInColumn++
+            margin -= 3600
+          }
+        }
+        //Eventを追加
+        event.columnNumber = columnNumber
+        event.adapterPosition = adapterPosition
+        event.positionInColumn = positionInColumn
+        timeTableItems.add(event)
+
+        previousEventTime = event.endTime
+        adapterPosition++
+        positionInColumn++
+
+        //columnの中で最後のEventの場合
+        if(event == eventList.last()){
+          //Margin発生
+          if(previousEventTime <= lastEndTime) {
+            //Marginを計算
+            var margin = lastEndTime.toIntTime() - previousEventTime.toIntTime()
+            //Marginがなくなるまでループ
+            while (margin > 0) {
+              //加算分のminutesを計算
+              val plusMinutes =
+                if (previousEventTime.minute != 60) (60 - previousEventTime.minute).toLong() else 60
+              if (margin >= 3600) {
+                //Marginが1時間以上の場合
+                timeTableItems.add(
+                  Margin(
+                    previousEventTime,
+                    previousEventTime.plusMinutes(plusMinutes),
+                    columnNumber,
+                    adapterPosition,
+                    positionInColumn
+                  )
+                )
+              } else {
+                //Marginが1時間未満の場合
+                timeTableItems.add(
+                  Margin(
+                    previousEventTime,
+                    lastEndTime,
+                    columnNumber,
+                    adapterPosition,
+                    positionInColumn
+                  )
+                )
+              }
+              previousEventTime = previousEventTime.plusMinutes(plusMinutes)
+              adapterPosition++
+              positionInColumn++
+
+              margin -= 3600
+            }
+          }
+        }
+      }
+      columnNumber++
+      positionInColumn = 0
+    }
+    return timeTableItems
   }
 }
