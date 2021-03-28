@@ -9,6 +9,7 @@ import com.xwray.groupie.ViewHolder
 import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager
 import io.moyuru.timetablelayout.layoutmanager.TimetableLayoutManager.Event
 import io.moyuru.timetablelayoutsample.adapter.TimeTableAdapter
+import io.moyuru.timetablelayoutsample.decoration.NameDecoration
 import io.moyuru.timetablelayoutsample.decoration.ProgramTimeLabelDecoration
 import io.moyuru.timetablelayoutsample.decoration.TimeDecoration
 import java.time.LocalTime
@@ -84,10 +85,8 @@ class MainActivity : AppCompatActivity() {
     val heightPerMin = resources.getDimensionPixelSize(R.dimen.heightPerMinute)
     //区切り線を入れる
     recyclerView.addItemDecoration(TimeDecoration(this, eventSchedule, heightPerMin))
-    /*//区切り線を入れる
-    binding.recyclerView.addItemDecoration(
-      StageNameDecoration(this, periods, periods.distinctBy { it.stageNumber }.size)
-    )*/
+    //区切り線を入れる
+    recyclerView.addItemDecoration(NameDecoration(this, eventSchedule,eventSchedule.size))
 
     recyclerView.adapter = TimeTableAdapter(this,eventSchedule)
 

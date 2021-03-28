@@ -26,8 +26,9 @@ class TimeDecoration(context: Context, private val events: MutableMap<String,Mut
 
   /*override fun canDecorate(position: Int): Boolean = periods.getOrNull(position) is Program
 
-  override fun getStartUnixMillis(position: Int): Long = periods.getOrNull(position)?.startAt ?: 0
+  override fun getStartUnixMillis(position: Int): Long = periods.getOrNull(position)?.startAt ?: 0*/
 
-  override fun formatUnixMillis(unixMillis: Long): String =
-    LocalDateTime.ofEpochSecond(unixMillis / 1000, 0, ZoneOffset.UTC).format(formatter)*/
+  override fun formatUnixMillis(time: Int): String {
+    return "$time:00"
+  }
 }

@@ -21,6 +21,9 @@ class ProgramTimeLabelDecoration(context: Context, private val periods: List<Per
   ) {
 
   private val formatter = DateTimeFormatter.ofPattern("HH:mm")
+  override fun formatUnixMillis(time: Int): String {
+    TODO("Not yet implemented")
+  }
 
   /*override fun canDecorate(position: Int): Boolean = periods.getOrNull(position) is Program
 

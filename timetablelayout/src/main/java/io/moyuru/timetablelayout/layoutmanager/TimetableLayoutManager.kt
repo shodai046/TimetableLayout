@@ -308,14 +308,12 @@ class TimetableLayoutManager(
       val bottomView = findBottomView() ?: return 0
       val event = events.getOrNull(bottomView.adapterPosition) ?: return 0
       val bottom = getDecoratedBottom(bottomView)
-      if (event.startTime == lastEndTime) if (bottom == parentBottom) 0 else min(dy, bottom - parentBottom)
-      else dy
+      if (bottom == parentBottom) 0 else min(dy, bottom - parentBottom)
     } else {
       val topView = findTopView() ?: return 0
       val event = events.getOrNull(topView.adapterPosition) ?: return 0
       val top = getDecoratedTop(topView)
-      if (event.startTime == firstStartTime) if (top == parentTop) 0 else max(dy, top - parentTop)
-      else dy
+      if (top == parentTop) 0 else max(dy, top - parentTop)
     }
   }
 

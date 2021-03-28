@@ -49,37 +49,27 @@ abstract class TimeLabelDecoration(
     val base = parent.children.filter { it.top <= parent.paddingTop }.minBy { it.top } ?: return
     //val baseEpochMillis = startAtList.getOrNull(base.layoutPosition) ?: return
 
-    val height = parent.height
-    val num = height/(60*heightPerMinute)
+    //val height = parent.height
+    //val num = height/(60*heightPerMinute)
 
 
-    /*for(i in 0 .. num){
-      val gap = TimeUnit.MILLISECONDS.toMinutes((i+2)*60+baseEpochMillis - baseEpochMillis) * heightPerMinute
+    for(i in 0 .. 24){
+      val gap = heightPerMinute* i*60*60/1000
+      //val gap = TimeUnit.MILLISECONDS.toMinutes((i+2)*60+baseEpochMillis - baseEpochMillis) * heightPerMinute
       val top = base.top + gap
       c.drawTextAtCenter(
-        formatUnixMillis(0),
-        Rect(0, top.toInt(), width, (top + textHeight).toInt()),
+        formatUnixMillis(i),
+        //"a",
+        //Rect(0, top.toInt(), width, (top + textHeight).toInt()),
+        Rect(0, top.toInt(), width, (top + 32).toInt()),
         textPaint
       )
-    }*/
-
-    /*startAtList
-      .filterIndexed { i, startAt -> startAt >= baseEpochMillis && canDecorate(i) }
-      .distinct()
-      .forEach { startAt ->
-        val gap = TimeUnit.MILLISECONDS.toMinutes(startAt - baseEpochMillis) * heightPerMinute
-        val top = base.top + gap
-        c.drawTextAtCenter(
-          formatUnixMillis(startAt),
-          Rect(0, top.toInt(), width, (top + textHeight).toInt()),
-          textPaint
-        )
-      }*/
+    }
   }
 
  /* protected abstract fun canDecorate(position: Int): Boolean
 
-  protected abstract fun getStartUnixMillis(position: Int): Long
+  protected abstract fun getStartUnixMillis(position: Int): Long*/
 
-  protected abstract fun formatUnixMillis(unixMillis: Long): String*/
+  protected abstract fun formatUnixMillis(time:Int): String
 }
